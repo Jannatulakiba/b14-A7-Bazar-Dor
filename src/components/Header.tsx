@@ -45,7 +45,7 @@ const Header = () => {
   const date = new Date().toLocaleDateString('bn-BD', { dateStyle: 'full' });
 
   useEffect(() => {
-    fetch('https://api.api-store.workers.dev/api/bazardor/categories')
+    fetch('https://api.abcz.workers.dev/api/bazardor/categories')
       .then((res) => res.json())
       .then((json) => setCategories(Array.isArray(json) ? json : json.data ?? []))
       .catch(() => setCategories([]));

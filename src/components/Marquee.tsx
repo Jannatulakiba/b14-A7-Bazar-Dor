@@ -16,7 +16,7 @@ const Marquee = () => {
   const [products, setProducts] = useState<Product[]>([]);
 
 useEffect(() => {
-  fetch('https://api.api-store.workers.dev/api/bazardor/products')
+  fetch('https://api.abcz.workers.dev/api/bazardor/products')
     .then((res) => res.json())
     .then((json) => setProducts(Array.isArray(json) ? json : json.data ?? []))
     .catch(() => setProducts([]));

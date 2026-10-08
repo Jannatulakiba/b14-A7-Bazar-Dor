@@ -6,10 +6,9 @@ import ProductCard from './ProductCard';
 
 const sortOptions = [
   { value: 'default', label: 'ডিফল্ট' },
-  { value: 'price-asc', label: 'দাম: কম থেকে বেশি' },
-  { value: 'price-desc', label: 'দাম: বেশি থেকে কম' },
-  { value: 'rise', label: 'সবচেয়ে বেশি বেড়েছে' },
-  { value: 'fall', label: 'সবচেয়ে বেশি কমেছে' },
+  { value: 'price-asc', label: 'দাম কম থেকে বেশি' },
+  { value: 'price-desc', label: 'দাম বেশি থেকে কম' },
+  
 ];
 
 const CategoryProducts = ({ products }: { products: Product[] }) => {
