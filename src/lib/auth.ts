@@ -20,8 +20,8 @@ export const auth = betterAuth({
 
     sendVerificationEmail: async ({ user, url }) => {
       void resend.emails.send({
-        from: "Bazar Dor <onboarding@resend.dev>",
-        to: [user.email],
+        from: "Acme <onboarding@resend.dev>",
+        to: user.email,
         subject: "আপনার ইমেইল যাচাই করুন",
         html: `
           <p>হ্যালো ${user.name},</p>
