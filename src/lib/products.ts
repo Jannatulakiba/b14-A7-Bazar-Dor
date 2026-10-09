@@ -41,7 +41,7 @@ export const unitBn: Record<string, string> = {
   piece: 'পিস',
 };
 
-const API = 'https://api.abcz.workers.dev/api/bazardor';
+const API = 'https://api.api-store.workers.dev/api/bazardor/products';
 
 const getList = async <T,>(url: string, revalidate: number): Promise<T[]> => {
   try {
