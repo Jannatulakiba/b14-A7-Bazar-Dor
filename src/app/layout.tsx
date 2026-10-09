@@ -4,6 +4,7 @@ import "./globals.css";
 import Marquee from "@/components/Marquee"; 
 import Footer from "@/components/Footer";
    import Header from "@/components/Header";
+   import { Toaster } from "sonner";
 
 const notoSerifBengali = Noto_Serif_Bengali({
   variable: "--font-noto-serif-bengali",
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
   
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,6 +29,7 @@ export default function RootLayout({
         <Header />
         <Marquee />
         <main className="flex-1">{children}</main>
+         <Toaster position="top-center" richColors />
         <Footer />
       </body>
     </html>

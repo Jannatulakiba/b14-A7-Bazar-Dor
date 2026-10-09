@@ -14,7 +14,7 @@ const ResendButton = ({ email }: { email?: string }) => {
 
     const { error } = await authClient.sendVerificationEmail({
       email,
-      callbackURL: '/sign-in',
+      callbackURL: '/',
     });
 
     setLoading(false);

@@ -2,62 +2,83 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
-const input =
+const inputClass =
   "w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-green-600 focus:outline-none";
-const label = "mb-1 block text-sm font-medium text-gray-800";
+const labelClass = "mb-1 block text-sm font-medium text-gray-800";
+
+type Provider = "google" | "github";
 
 const SignUpPage = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<Provider | null>(null);
 
-  const handleGoogleSignIn = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/",
-    });
+  const busy = loading || socialLoading !== null;
+
+  const handleSocialSignIn = async (provider: Provider) => {
+    if (busy) return;
+    setSocialLoading(provider);
+    try {
+      const { error } = await authClient.signIn.social({
+        provider,
+        callbackURL: "/",
+        errorCallbackURL: "/sign-in",
+      });
+    if (error) {
+  console.error("social error:", JSON.stringify(error, null, 2), error.status, error.statusText);
+  toast.error(error.message || `সোশ্যাল লগইন করা যায়নি (${error.status ?? "unknown"})`);
+}
+    } catch (err) {
+      console.error(err);
+      toast.error("সোশ্যাল লগইন করা যায়নি");
+    } finally {
+      setSocialLoading(null);
+    }
   };
 
-    const handleGithubSignIn = async () => {
-    await authClient.signIn.social({
-      provider: "github",
-      callbackURL: "/",
-    });
-  };
-
-  const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (busy) return;
 
     const formData = new FormData(e.currentTarget);
-    const { confirm, ...user } = Object.fromEntries(formData.entries()) as {
-      name: string;
-      email: string;
-      password: string;
-      confirm: string;
-    };
+    const name = String(formData.get("name") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const confirm = String(formData.get("confirm") ?? "");
 
-    if (user.password !== confirm) {
-      alert("পাসওয়ার্ড দুটি মিলছে না");
-      return;
-    }
+    if (!name) return toast.error("নাম দিন");
+    if (password.length < 8) return toast.error("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে");
+    if (password !== confirm) return toast.error("পাসওয়ার্ড দুটি মিলছে না");
 
-    const { data, error } = await authClient.signUp.email({
-      ...user,
-      callbackURL: "/",
-    });
+    setLoading(true);
+    try {
+      const { error } = await authClient.signUp.email({ name, email, password });
 
-    if (data) {
-      console.log("User signed up successfully:", data);
+      if (error) {
+        console.error("Error signing up:", error);
+        toast.error(error.message || "সাইন আপ করা যায়নি");
+        return;
+      }
+
+      toast.success("অ্যাকাউন্ট তৈরি হয়েছে");
       router.push("/");
       router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("কিছু ভুল হয়েছে, আবার চেষ্টা করুন");
+    } finally {
+      setLoading(false);
     }
-    if (error) console.error("Error signing up:", error);
   };
 
   return (
     <main className="bg-green-50/60 px-4 py-12">
       <div className="mx-auto max-w-md">
-        <div className="mb-1 text-center">
+        <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-gray-900">অ্যাকাউন্ট তৈরি করুন</h2>
           <p className="mt-1 text-sm text-gray-500">
             বিনা খরচে সাইন আপ করে সব বিস্তারিত দাম দেখুন।
@@ -67,30 +88,64 @@ const SignUpPage = () => {
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div>
-              <label className={label}>নাম</label>
-              <input name="name" type="text" required className={input} placeholder="যেমন: রহিম উদ্দিন" />
+              <label htmlFor="name" className={labelClass}>নাম</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                autoComplete="name"
+                className={inputClass}
+                placeholder="যেমন: রহিম উদ্দিন"
+              />
             </div>
 
             <div>
-              <label className={label}>ইমেইল</label>
-              <input name="email" type="email" required className={input} placeholder="you@example.com" />
+              <label htmlFor="email" className={labelClass}>ইমেইল</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className={inputClass}
+                placeholder="you@example.com"
+              />
             </div>
 
             <div>
-              <label className={label}>পাসওয়ার্ড</label>
-              <input name="password" type="password" required minLength={8} className={input} placeholder="কমপক্ষে ৮ অক্ষর" />
+              <label htmlFor="password" className={labelClass}>পাসওয়ার্ড</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className={inputClass}
+                placeholder="কমপক্ষে ৮ অক্ষর"
+              />
             </div>
 
             <div>
-              <label className={label}>পাসওয়ার্ড নিশ্চিত করুন</label>
-              <input name="confirm" type="password" required className={input} placeholder="আবার লিখুন" />
+              <label htmlFor="confirm" className={labelClass}>পাসওয়ার্ড নিশ্চিত করুন</label>
+              <input
+                id="confirm"
+                name="confirm"
+                type="password"
+                required
+                autoComplete="new-password"
+                className={inputClass}
+                placeholder="আবার লিখুন"
+              />
             </div>
 
             <button
               type="submit"
-              className="rounded-lg bg-green-700 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-green-800"
+              disabled={busy}
+              className="rounded-lg bg-green-700 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-green-800 disabled:opacity-60"
             >
-              অ্যাকাউন্ট তৈরি করুন
+              {loading ? "অপেক্ষা করুন..." : "অ্যাকাউন্ট তৈরি করুন"}
             </button>
           </form>
 
@@ -103,17 +158,19 @@ const SignUpPage = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={handleGoogleSignIn}
-              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50"
+              disabled={busy}
+              onClick={() => handleSocialSignIn("google")}
+              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-60"
             >
-              Google দিয়ে চালিয়ে যান
+              {socialLoading === "google" ? "অপেক্ষা করুন..." : "Google দিয়ে চালিয়ে যান"}
             </button>
             <button
               type="button"
-              onClick={handleGithubSignIn}
-              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50"
+              disabled={busy}
+              onClick={() => handleSocialSignIn("github")}
+              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-60"
             >
-              GitHub দিয়ে চালিয়ে যান
+              {socialLoading === "github" ? "অপেক্ষা করুন..." : "GitHub দিয়ে চালিয়ে যান"}
             </button>
           </div>
 
@@ -126,8 +183,7 @@ const SignUpPage = () => {
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-        
-<Link href="/" >   ← হোম পেজে ফিরে যান</Link>
+          <Link href="/">← হোম পেজে ফিরে যান</Link>
         </p>
       </div>
     </main>
