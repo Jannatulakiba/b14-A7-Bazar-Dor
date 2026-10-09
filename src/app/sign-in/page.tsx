@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
 const input =
@@ -28,10 +30,12 @@ const SignInPage = () => {
     if (error) {
       console.error("Error signing in:", error);
       setError("ইমেইল বা পাসওয়ার্ড ভুল");
+      toast.error("ইমেইল বা পাসওয়ার্ড ভুল");
       return;
     }
 
     console.log("User signed in successfully:", data);
+    toast.success("সফলভাবে সাইন ইন হয়েছে");
     router.push("/");
   };
 
@@ -99,7 +103,7 @@ const SignInPage = () => {
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-            <Link href="/" >   ← হোম পেজে ফিরে যান</Link>
+          <Link href="/">← হোম পেজে ফিরে যান</Link>
         </p>
       </div>
     </main>

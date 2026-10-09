@@ -29,7 +29,7 @@ export default function RootLayout({
         <Header />
         <Marquee />
         <main className="flex-1">{children}</main>
-         <Toaster position="top-center" richColors />
+           <Toaster position="top-center" richColors closeButton />
         <Footer />
       </body>
     </html>
