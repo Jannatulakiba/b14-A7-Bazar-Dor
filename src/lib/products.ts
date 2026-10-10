@@ -41,14 +41,18 @@ export const unitBn: Record<string, string> = {
   piece: 'পিস',
 };
 
-const API = 'https://api.api-store.workers.dev/api/bazardor/products';
+const API = 'https://openapi.programming-hero.com/api/bazardor';
 
 const getList = async <T,>(url: string, revalidate: number): Promise<T[]> => {
   try {
     const res = await fetch(url, { next: { revalidate } });
     if (!res.ok) return [];
-    const json = await res.json();
-    return Array.isArray(json) ? json : json.data ?? [];
+    const json: unknown = await res.json();
+    if (Array.isArray(json)) return json as T[];
+    if (typeof json === 'object' && json !== null && 'data' in json && Array.isArray(json.data)) {
+      return json.data as T[];
+    }
+    return [];
   } catch {
     return [];
   }
@@ -57,7 +61,7 @@ const getList = async <T,>(url: string, revalidate: number): Promise<T[]> => {
 export const getProducts = () => getList<ProductDetail>(`${API}/products`, 300);
 
 export const getProductsByCategory = (slug: string) =>
-  getList<ProductDetail>(`${API}/products?category=${slug}`, 300);
+  getList<ProductDetail>(`${API}/products?category=${encodeURIComponent(slug)}`, 300);
 
 export const getCategories = () => getList<Category>(`${API}/categories`, 3600);
 
