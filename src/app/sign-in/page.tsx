@@ -3,40 +3,69 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
-const input =
+const inputClass =
   "w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-green-600 focus:outline-none";
-const label = "mb-1 block text-sm font-medium text-gray-800";
+const labelClass = "mb-1 block text-sm font-medium text-gray-800";
+
+type Provider = "google" | "github";
 
 const SignInPage = () => {
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<Provider | null>(null);
+
+  const busy = loading || socialLoading !== null;
+
+  const handleSocialSignIn = async (provider: Provider) => {
+    if (busy) return;
+    setSocialLoading(provider);
+    try {
+      const { error } = await authClient.signIn.social({
+        provider,
+        callbackURL: "/",
+        errorCallbackURL: "/sign-in",
+      });
+      if (error) toast.error(error.message || "সোশ্যাল লগইন করা যায়নি");
+    } catch (err) {
+      console.error(err);
+      toast.error("সোশ্যাল লগইন করা যায়নি");
+    } finally {
+      setSocialLoading(null);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    if (busy) return;
 
     const formData = new FormData(e.currentTarget);
-    const user = Object.fromEntries(formData.entries()) as {
-      email: string;
-      password: string;
-    };
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
 
-    const { data, error } = await authClient.signIn.email({ ...user });
+    if (!email || !password) return toast.error("ইমেইল ও পাসওয়ার্ড দিন");
 
-    if (error) {
-      console.error("Error signing in:", error);
-      setError("ইমেইল বা পাসওয়ার্ড ভুল");
-      toast.error("ইমেইল বা পাসওয়ার্ড ভুল");
-      return;
+    setLoading(true);
+    try {
+      const { error } = await authClient.signIn.email({ email, password });
+
+      if (error) {
+        console.error("Error signing in:", error);
+        toast.error(error.message || "ইমেইল বা পাসওয়ার্ড ভুল");
+        return;
+      }
+
+      toast.success("সফলভাবে সাইন ইন হয়েছে");
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("কিছু ভুল হয়েছে, আবার চেষ্টা করুন");
+    } finally {
+      setLoading(false);
     }
-
-    console.log("User signed in successfully:", data);
-    toast.success("সফলভাবে সাইন ইন হয়েছে");
-    router.push("/");
   };
 
   return (
@@ -52,22 +81,37 @@ const SignInPage = () => {
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div>
-              <label className={label}>ইমেইল</label>
-              <input name="email" type="email" required className={input} placeholder="you@example.com" />
+              <label htmlFor="email" className={labelClass}>ইমেইল</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className={inputClass}
+                placeholder="you@example.com"
+              />
             </div>
 
             <div>
-              <label className={label}>পাসওয়ার্ড</label>
-              <input name="password" type="password" required className={input} placeholder="আপনার পাসওয়ার্ড" />
+              <label htmlFor="password" className={labelClass}>পাসওয়ার্ড</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className={inputClass}
+                placeholder="আপনার পাসওয়ার্ড"
+              />
             </div>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
-              className="rounded-lg bg-green-700 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-green-800"
+              disabled={busy}
+              className="rounded-lg bg-green-700 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-green-800 disabled:opacity-60"
             >
-              সাইন ইন করুন
+              {loading ? "অপেক্ষা করুন..." : "সাইন ইন করুন"}
             </button>
           </form>
 
@@ -80,17 +124,19 @@ const SignInPage = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/" })}
-              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50"
+              disabled={busy}
+              onClick={() => handleSocialSignIn("google")}
+              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-60"
             >
-              Google দিয়ে চালিয়ে যান
+              {socialLoading === "google" ? "অপেক্ষা করুন..." : "Google দিয়ে চালিয়ে যান"}
             </button>
             <button
               type="button"
-              onClick={() => authClient.signIn.social({ provider: "github", callbackURL: "/" })}
-              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50"
+              disabled={busy}
+              onClick={() => handleSocialSignIn("github")}
+              className="rounded-lg border border-gray-200 py-2.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-60"
             >
-              GitHub দিয়ে চালিয়ে যান
+              {socialLoading === "github" ? "অপেক্ষা করুন..." : "GitHub দিয়ে চালিয়ে যান"}
             </button>
           </div>
 
